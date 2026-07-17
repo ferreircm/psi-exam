@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSI Louisiana Life Insurance Exam</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }
+        .container { max-width: 700px; margin: 0 auto; background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+        h1 { font-size: 20px; font-weight: 500; }
+        .timer { font-size: 18px; font-weight: 600; padding: 10px 16px; border-radius: 8px; background: #f0f0f0; }
+        .timer.warning { background: #fee; color: #d32f2f; }
+        .progress-bar { background: #e0e0e0; height: 4px; border-radius: 2px; margin-bottom: 1.5rem; overflow: hidden; }
+        .progress-fill { background: #1976d2; height: 100%; transition: width 0.3s; }
+        .question { margin-bottom: 2rem; }
+        .question h3 { font-size: 16px; font-weight: 500; margin-bottom: 1.5rem; line-height: 1.6; }
+        .question-topic { font-size: 12px; color: #999; margin-bottom: 0.5rem; }
+        .options { display: flex; flex-direction: column; gap: 12px; }
+        .option { display: flex; align-items: center; padding: 12px; border: 1px solid #d0d0d0; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+        .option:hover { background: #f5f5f5; }
+        .option.selected { border: 2px solid #1976d2; background: #e3f2fd; }
+        .option input { margin-right: 12px; cursor: pointer; }
+        .option label { cursor: pointer; flex: 1; font-size: 14px; }
+        .feedback { padding: 1rem; border-radius: 8px; margin-bottom: 2rem; border-left: 4px solid; }
+        .feedback.correct { background: #f1f8e9; border-left-color: #4caf50; color: #2e7d32; }
+        .feedback.incorrect { background: #ffebee; border-left-color: #f44336; color: #c62828; }
+        .buttons { display: flex; gap: 12px; margin-bottom: 1rem; }
+        .btn { flex: 1; padding: 12px; border: 1px solid #d0d0d0; border-radius: 8px; cursor: pointer; font-size: 14px; background: white; transition: all 0.2s; }
+        .btn:hover:not(:disabled) { background: #f5f5f5; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary { background: #1976d2; color: white; border-color: #1976d2; }
+        .btn-primary:hover:not(:disabled) { background: #1565c0; }
+        .btn-primary:disabled { background: #ccc; }
+        .status { font-size: 12px; color: #999; text-align: center; margin-top: 1rem; }
+        .results { text-align: center; }
+        .score { font-size: 48px; font-weight: 600; margin: 1rem 0; }
+        .score.pass { color: #4caf50; }
+        .score.fail { color: #f44336; }
+        .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 2rem 0; }
+        .summary-card { background: #f5f5f5; padding: 1rem; border-radius: 8px; text-align: center; }
+        .summary-card-value { font-size: 24px; font-weight: 600; margin: 0.5rem 0; }
+        .summary-card-label { font-size: 12px; color: #999; }
+        .meta { font-size: 13px; color: #999; display: flex; gap: 2rem; margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="container" id="app"></div>
+
+    <script>
+        // Question bank organized by topic
+        const questionBank = {
+            louisiana: [ // 10 questions
+                { q: "In Louisiana, who regulates insurance agents?", opts: ["The Federal Reserve", "Louisiana Department of Insurance", "The IRS", "State Bar Association"], ans: 1, exp: "The Louisiana Department of Insurance (LDI) regulates insurance licensing, practices, and compliance in the state." },
+                { q: "What is the contestable period in Louisiana life insurance?", opts: ["6 months", "1 year", "2 years", "5 years"], ans: 2, exp: "Louisiana law allows insurers a 2-year incontestability period to contest policy claims based on misstatements." },
+                { q: "In Louisiana, how long is the reinstatement period?", opts: ["6 months", "1 year", "5 years", "Indefinite"], ans: 2, exp: "Louisiana generally allows reinstatement of lapsed policies within 5 years from the lapse date." },
+                { q: "In Louisiana, what must an agent do before soliciting a sale?", opts: ["Nothing special", "Obtain a license", "Ask permission only", "Verify age"], ans: 1, exp: "An agent must obtain and maintain a valid Louisiana insurance license before engaging in any insurance solicitation or sale." },
+                { q: "In Louisiana, what must an Agent's primary duty be?", opts: ["Maximize company profit", "Act in the client's best interest", "Sell the highest commission product", "None of the above"], ans: 1, exp: "Agents in Louisiana have a fiduciary duty to act in the best interest of their clients." },
+                { q: "In Louisiana, what is agents' prohibition on unfair practices?", opts: ["None", "All unfair, deceptive, and discriminatory practices prohibited", "Limited rules", "Partial restrictions"], ans: 1, exp: "Louisiana law prohibits all unfair, deceptive, or discriminatory practices in insurance sales and servicing." },
+                { q: "In Louisiana, what must an agent disclose regarding conflicts of interest?", opts: ["Never", "Only if asked", "Before or at time of transaction", "After the sale"], ans: 2, exp: "Louisiana law requires agents to disclose material conflicts of interest before or at the time of the transaction." },
+                { q: "What is required when replacing a policy in Louisiana?", opts: ["None", "Verbal explanation only", "Written notice comparing old and new policies", "Agent's commission"], ans: 2, exp: "Replacement requires written notice to the consumer explaining the differences and reasons for replacing the existing policy." },
+                { q: "What disclosure must Louisiana agents provide for illustrations?", opts: ["Agent opinions only", "Guaranteed and projected values clearly labeled", "Historical returns only", "Future interest rates"], ans: 1, exp: "Illustrations must clearly show guaranteed minimum values and realistic non-guaranteed projections so consumers understand outcomes." },
+                { q: "What is a Louisiana agent's duty if a client has a complaint?", opts: ["Ignore it", "Forward to insurer and regulator", "Deny responsibility", "Solve alone"], ans: 1, exp: "Agents must report consumer complaints to both their insurer and the Louisiana Department of Insurance." }
+            ],
+            licensing: [ // 2 questions
+                { q: "What must happen before policy delivery in Louisiana?", opts: ["Nothing required", "Buyer receives signed illustration and free look notice", "Agent signature only", "Payment receipt only"], ans: 1, exp: "Before delivery, the buyer must receive the illustration, free look notice, and any required consumer guides." },
+                { q: "What documentation must be kept by agents in Louisiana?", opts: ["Minimal records", "Detailed records of all client interactions and transactions", "No records", "Annual only"], ans: 1, exp: "Agents must maintain detailed records of applications, illustrations, replacements, and client interactions for compliance." }
+            ],
+            general: [ // 14 questions
+                { q: "What is the primary purpose of life insurance?", opts: ["Investment returns", "To provide financial protection for beneficiaries upon the insured's death", "Tax avoidance", "Estate planning only"], ans: 1, exp: "Life insurance's main purpose is to provide financial security to beneficiaries when the insured passes away." },
+                { q: "What does 'insurable interest' mean?", opts: ["Interest paid on loans", "The policyholder would suffer financial loss if insured dies", "Investment returns", "Policy renewal"], ans: 1, exp: "Insurable interest means the policyholder would suffer actual financial hardship from the insured's death." },
+                { q: "What is 'adverse selection'?", opts: ["Poor sales technique", "Unhealthy people seeking high coverage", "Beneficiary selection", "Poor timing"], ans: 1, exp: "Adverse selection occurs when people with higher risk (poor health) disproportionately purchase insurance, increasing company losses." },
+                { q: "What is 'moral hazard'?", opts: ["Bad intentions", "Risk of dishonesty or fraud by the insured", "Ethical concerns", "Poor claim handling"], ans: 1, exp: "Moral hazard is the risk that an insured might behave dishonestly or fraudulently to profit from insurance proceeds." },
+                { q: "What is 'income replacement' in life insurance planning?", opts: ["Tax refund", "Ensuring family income if earner dies", "Salary increase", "Investment return"], ans: 1, exp: "Income replacement insurance ensures the family can maintain their standard of living if the primary earner dies." },
+                { q: "What is a 'needs analysis'?", opts: ["Market research", "Assessment of an individual's insurance requirements", "Competitor comparison", "Product features"], ans: 1, exp: "Needs analysis evaluates a client's financial goals, obligations, and risks to determine appropriate coverage amount." },
+                { q: "What is 'duplication of coverage'?", opts: ["Having multiple policies", "Excessive insurance relative to actual needs", "Normal practice", "Required by law"], ans: 1, exp: "Duplication occurs when total coverage exceeds actual insurable interest, creating unnecessary expense and fraud risk." },
+                { q: "What is 'underinsurance'?", opts: ["Good practice", "Having insufficient coverage to meet financial needs", "No coverage", "Recommended approach"], ans: 1, exp: "Underinsurance leaves the family inadequately protected if the insured dies, failing to meet financial obligations." },
+                { q: "What is the purpose of 'needs analysis'?", opts: ["Marketing check", "Determination that recommendation is appropriate for client's situation", "Compliance only", "Optional analysis"], ans: 1, exp: "Needs analysis determines what insurance coverage is appropriate based on the individual's financial goals and obligations." },
+                { q: "What is 'twisting' in insurance?", opts: ["Product confusion", "Inducing replacement through misrepresentation", "Policy review", "Rate adjustment"], ans: 1, exp: "Twisting is unethical inducement of policy replacement through misleading statements, harming the consumer." },
+                { q: "What is 'churning'?", opts: ["Repeated inappropriate replacements for personal gain", "For personal gain through commissions", "Normal business", "Recommended practice"], ans: 0, exp: "Churning is recommending unnecessary policy replacements repeatedly to generate commissions, harming the customer." },
+                { q: "What duty does an insurer owe to applicants?", opts: ["No duty", "Duty of good faith and fair dealing", "Duty to approve all applications", "No obligations"], ans: 1, exp: "Insurers have a duty of good faith and fair dealing to treat applicants fairly, avoid unfair practices, and handle claims promptly." },
+                { q: "What is 'unfair discrimination' in life insurance?", opts: ["Legitimate risk classification", "Using non-actuarial factors to charge different rates", "Underwriting", "Premium pricing"], ans: 1, exp: "Unfair discrimination uses factors (race, religion, national origin) not actuarially justified, which is prohibited." },
+                { q: "What is required for 'fair and accurate' disclosure?", opts: ["Anything goes", "Complete, honest, clear information on material facts", "Brochure only", "Verbal only"], ans: 1, exp: "Fair and accurate disclosure requires providing complete, honest, and clear information about all material policy features." }
+            ],
+            basics: [ // 16 questions
+                { q: "Which type of life insurance provides coverage for a specific period?", opts: ["Whole life", "Term life", "Universal life", "Variable universal life"], ans: 1, exp: "Term life insurance covers the insured for a specific period (10, 20, 30 years, etc.), after which coverage ends unless renewed." },
+                { q: "What is a beneficiary?", opts: ["The insurance company", "The person who receives policy proceeds", "The underwriter", "The policy seller"], ans: 1, exp: "A beneficiary is the person (or entity) designated to receive the death benefit proceeds." },
+                { q: "What does the free look period allow policyholders to do?", opts: ["Cancel without penalty within a specified timeframe", "Change beneficiaries anytime", "Take policy loans", "Increase coverage"], ans: 0, exp: "The free look period (typically 10-30 days) allows policyholders to review the policy and cancel it for a full refund if dissatisfied." },
+                { q: "Which provision allows policyholders to borrow against their policy value?", opts: ["Grace period", "Suicide clause", "Policy loan provision", "Waiver of premium"], ans: 2, exp: "The policy loan provision permits policyholders to borrow against the cash value of their policy." },
+                { q: "What is the grace period in a life insurance policy?", opts: ["Time to cancel", "Time to pay overdue premiums before lapse", "Time to add riders", "Time to borrow"], ans: 1, exp: "The grace period (typically 30-31 days) allows the policyholder to pay overdue premiums without the policy lapsing." },
+                { q: "What does the suicide clause protect?", opts: ["The beneficiary", "The policyholder", "The insurance company", "No one"], ans: 2, exp: "The suicide clause protects the insurer by denying the death benefit (or returning premiums) if suicide occurs within the contestable period (typically 2 years)." },
+                { q: "What triggers the death benefit payout?", opts: ["Policy anniversary", "Policyholder's birthday", "Verified proof of death", "End of term"], ans: 2, exp: "The death benefit is paid upon verified proof of the insured's death, typically requiring a death certificate." },
+                { q: "What is a 'lapsed' policy?", opts: ["A policy that's paid off", "A policy that has ended due to non-payment", "A cancelled rider", "An expired free look"], ans: 1, exp: "A lapsed policy is one that has terminated because premiums were not paid within the grace period." },
+                { q: "Can a lapsed policy be reinstated?", opts: ["Never", "Only within 5 years with evidence of insurability", "Anytime without conditions", "Only by the beneficiary"], ans: 1, exp: "Lapsed policies can generally be reinstated within 5 years if the insured provides evidence of insurability and pays back premiums." },
+                { q: "What is a 'nonforfeiture option'?", opts: ["Penalty for cancellation", "Choice of what to do with cash value at lapse", "Death benefit reduction", "Rider cancellation"], ans: 1, exp: "Nonforfeiture options include paid-up insurance or extended term, allowing the policyholder to preserve some value if premiums stop." },
+                { q: "What is a rider?", opts: ["A person who shares the policy", "An optional addition to a policy that modifies coverage", "A delay in benefits", "A type of claim"], ans: 1, exp: "A rider is an optional endorsement that adds, excludes, or modifies coverage in the base policy." },
+                { q: "What is the incontestability clause?", opts: ["Cannot cancel policy", "Insurer cannot contest claims after contestable period", "Never pay claims", "Must pay all claims"], ans: 1, exp: "The incontestability clause states that after a set period (usually 2 years), the insurer cannot contest the validity of the policy." },
+                { q: "What is a waiver of premium rider?", opts: ["Waives the agent's commission", "Waives premiums if insured becomes disabled", "Waives the death benefit", "Waives taxes"], ans: 1, exp: "Waiver of Premium rider waives policy premiums if the insured becomes totally disabled, keeping coverage in force." },
+                { q: "What does 'material misstatement' mean?", opts: ["A mistake in the agent's name", "A false statement that would affect underwriting", "A typo on the form", "A late payment"], ans: 1, exp: "Material misstatement is a false statement that the insurer relied upon when issuing the policy and affects the risk." },
+                { q: "What type of beneficiary designation cannot be changed without consent?", opts: ["Revocable beneficiary", "Irrevocable beneficiary", "Primary beneficiary", "Contingent beneficiary"], ans: 1, exp: "An irrevocable beneficiary has rights to the policy and cannot be changed without their written consent." },
+                { q: "Is the death benefit generally taxable income?", opts: ["Always", "Never", "Only if policy is MEC", "Depends on ownership"], ans: 1, exp: "Death benefits are generally NOT taxable income to beneficiaries, providing a key tax advantage of life insurance." }
+            ],
+            types: [ // 17 questions
+                { q: "How is whole life insurance different from term?", opts: ["No difference", "Whole life lasts lifetime with cash value; term is temporary", "Term has higher premiums", "Whole life is cheaper"], ans: 1, exp: "Whole life provides lifelong coverage and builds cash value, while term is temporary coverage with no savings component." },
+                { q: "What is cash value in permanent insurance?", opts: ["The death benefit amount", "The savings component that accumulates over time", "The commission paid to agent", "Annual premium cost"], ans: 1, exp: "Cash value is the savings portion of permanent policies (Whole, Universal) that builds over time and can be borrowed against." },
+                { q: "What is a 'level term' policy?", opts: ["Variable premium", "Fixed premium and benefit amount for entire term", "Increasing benefit", "Decreasing benefit"], ans: 1, exp: "Level term maintains the same death benefit and premium throughout the entire term period." },
+                { q: "What is 'decreasing term' life insurance?", opts: ["Fixed benefit", "Benefit decreases over time while premium may be fixed", "No decrease", "Premium decreases"], ans: 1, exp: "Decreasing term policies have benefits that reduce over time, often used for mortgage or debt protection." },
+                { q: "What is 'increasing term' coverage?", opts: ["Fixed benefit", "Benefit increases over time", "No increase option", "Benefit only at end"], ans: 1, exp: "Increasing term allows death benefits to grow over time, protecting against inflation." },
+                { q: "What is the advantage of term life insurance?", opts: ["Builds cash value", "Lower premiums", "Lifetime coverage", "Investment returns"], ans: 1, exp: "Term life offers lower premiums compared to permanent insurance, making it affordable for those with temporary needs." },
+                { q: "What is the disadvantage of term life insurance?", opts: ["Too expensive", "Coverage ends at term end", "Cannot renew", "Always renewable"], ans: 1, exp: "Term insurance expires after the term ends, requiring new application (and medical underwriting) to continue coverage." },
+                { q: "What does 'guaranteed renewable' mean in a term policy?", opts: ["Cannot renew", "Insurer must renew without new medical exam", "Insurer discretion", "Automatic conversion"], ans: 1, exp: "Guaranteed renewable means the insurer must renew the policy at expiration without requiring new underwriting, though premiums may increase." },
+                { q: "What does 'convertible' mean for a term policy?", opts: ["Cannot change", "Can convert to permanent without medical exam", "Must convert", "Temporary option"], ans: 1, exp: "Convertible term allows policyholders to convert to permanent coverage without evidence of insurability within the conversion period." },
+                { q: "What is 'return of premium' term?", opts: ["No return", "Refunds unused portion of premiums at term end", "Keeps all premiums", "Negative return"], ans: 1, exp: "Return of premium term (ROP) refunds all or a portion of paid premiums if the policyholder outlives the term." },
+                { q: "What is a universal life policy?", opts: ["Coverage for all risks", "Flexible premiums with adjustable death benefit", "Whole life only", "Term insurance"], ans: 1, exp: "Universal Life (UL) offers flexible premiums and death benefits, with the difference between premiums and costs building cash value." },
+                { q: "How are universal life premiums structured?", opts: ["Fixed for life", "Flexible within limits", "Never change", "Determined monthly"], ans: 1, exp: "Universal Life (UL) allows flexible premiums that can be adjusted, as long as the policy has enough cash value to cover costs." },
+                { q: "What is variable universal life insurance?", opts: ["UL with fixed returns", "UL with investment choices and variable returns", "Regular term insurance", "Whole life only"], ans: 1, exp: "Variable Universal Life (VUL) combines UL's flexible premiums with investment options, so returns depend on market performance." },
+                { q: "What is a 'modified whole life' policy?", opts: ["Standard whole life", "Lower initial premiums increasing after set period", "Fixed premiums always", "Variable premiums"], ans: 1, exp: "Modified whole life has lower premiums for initial period, then higher premiums for the remaining life of the policy." },
+                { q: "What is 'limited pay' life insurance?", opts: ["No payments", "Premiums paid for limited period, coverage continues for life", "Pay indefinitely", "Temporary coverage"], ans: 1, exp: "Limited pay whole life requires premiums for a set period (20-pay, paid-up at 65) with coverage continuing for life." },
+                { q: "What is a term-to-permanent conversion option?", opts: ["Cannot convert", "Ability to convert term to permanent without medical exam", "Permanent only option", "Premium increase required"], ans: 1, exp: "Many term policies include conversion rights allowing policyholders to convert to permanent coverage within a specified period without proof of insurability." },
+                { q: "What is an 'annual renewable term' or ART policy?", opts: ["No renewal", "Renews annually with increasing premiums", "Level term", "Fixed premium"], ans: 1, exp: "Annual Renewable Term (ART) can be renewed each year, with premiums increasing each year as the insured ages." }
+            ],
+            provisions: [ // 26 questions
+                { q: "What is an accidental death benefit rider?", opts: ["All death benefits", "Additional benefit if death from accident", "Medical expenses only", "Disability coverage"], ans: 1, exp: "Accidental Death Benefit (ADB) rider pays an additional benefit if death results from accidental injury." },
+                { q: "What is the 'surrender charge' in permanent insurance?", opts: ["No charge", "Fee charged if policy surrendered early", "Annual charge", "Benefit charge"], ans: 1, exp: "Surrender charge is a fee imposed if the policyholder surrenders (cancels) a permanent policy during early years." },
+                { q: "What is 'persistence' in insurance?", opts: ["Pushing more sales", "Percentage of policies remaining in force", "Premium increase", "Policy lapse"], ans: 1, exp: "Persistence refers to how long policies remain in force, indicating customer satisfaction and policy value." },
+                { q: "What is the 'death benefit option' in life policies?", opts: ["Only one choice", "Choice between level or increasing death benefit", "Fixed always", "No options"], ans: 1, exp: "Death benefit options allow policyholders to choose between a level death benefit or a level death benefit plus accumulated cash value." },
+                { q: "What is 'reentry' term insurance?", opts: ["Cannot reenter", "Allows renewal at better rates if health acceptable", "No health requirement", "Premium discount"], ans: 1, exp: "Reentry term offers lower renewal rates if the insured agrees to pass medical underwriting at renewal." },
+                { q: "What is a 'survivorship' or 'second-to-die' policy used for?", opts: ["Individual coverage", "Estate tax planning", "Income protection", "Long-term care"], ans: 1, exp: "Survivorship insurance is commonly used in estate planning to pay estate taxes when the survivor of a couple passes away." },
+                { q: "What is a 'preferred provider' discount in life insurance?", opts: ["No discount", "Reduced rates for healthier applicants", "All applicants same", "Automatic for all"], ans: 1, exp: "Preferred provider or preferred risk discounts offer lower rates to applicants with excellent health and minimal risk factors." },
+                { q: "What is a 'smoker vs. non-smoker' rating?", opts: ["No difference", "Different rates based on smoking status", "Same rate always", "No underwriting"], ans: 1, exp: "Insurers charge different rates (typically higher for smokers) based on smoking status, which affects mortality risk." },
+                { q: "What is 'simplification' in insurance underwriting?", opts: ["No simplification", "Faster issuance with less medical underwriting for smaller amounts", "Requires more underwriting", "Never used"], ans: 1, exp: "Simplified or non-medical underwriting uses medical records and lab work instead of full exams for moderate coverage amounts." },
+                { q: "What is the 'face amount' or 'death benefit amount'?", opts: ["Premium amount", "The amount paid at death", "Cash value", "Annual amount"], ans: 1, exp: "Face amount is the death benefit amount stated in the policy, the principal benefit paid to beneficiaries." },
+                { q: "What is a 'guaranteed issue' policy?", opts: ["Medical exam required", "Issued without medical exam or health questions", "Requires approval", "Very expensive"], ans: 1, exp: "Guaranteed issue policies are issued without health underwriting, though usually with coverage limits and higher premiums." },
+                { q: "What is the 'renewal option' in term policies?", opts: ["Cannot renew", "Right to renew when term ends", "Automatic renewal", "Must apply new"], ans: 1, exp: "Renewal option gives the policyholder the right to renew coverage at the end of the term period." },
+                { q: "What is a 'family plan' policy?", opts: ["Spouse only", "Single policy covering family members", "Children only", "Individual policies"], ans: 1, exp: "Family plan provides coverage for the insured, spouse, and children under one policy for convenience and savings." },
+                { q: "What is 'joint life' insurance?", opts: ["Individual coverage", "Single policy covering two people", "Spouse protection", "Children only"], ans: 1, exp: "Joint life covers two insureds under one policy; usually pays at first death (or both, depending on contract)." },
+                { q: "What happens with a 'policy dividend'?", opts: ["Never paid", "Policyholder's share of company surplus", "Premium reduction only", "Death benefit"], ans: 1, exp: "Dividends in participating policies represent the policyholder's share of company surplus, paid or used to reduce premiums." },
+                { q: "What is a 'participating policy'?", opts: ["No dividends", "Policy eligible to receive dividends", "Must receive dividends", "Non-dividends"], ans: 1, exp: "Participating policies are eligible to receive dividends from insurance company surplus when profits allow." },
+                { q: "What is a 'non-participating policy'?", opts: ["Receives dividends", "Does not participate in company surplus or dividends", "Lower cost", "Higher cost"], ans: 1, exp: "Non-participating (non-par) policies do not receive dividends and have lower premiums with no profit sharing." },
+                { q: "What is a 'conditional receipt'?", opts: ["No receipt", "Temporary coverage while application reviewed", "Permanent policy", "Rejected application"], ans: 1, exp: "Conditional receipt provides temporary coverage from application date while underwriting review is pending." },
+                { q: "What is 'accelerated benefits' or 'living benefits'?", opts: ["Never available", "Access to death benefit while living under certain conditions", "Death benefit only", "Terminal illness"], ans: 1, exp: "Accelerated benefits allow access to part of the death benefit while living if terminally ill or experiencing specific conditions." },
+                { q: "What is an 'age-nearest-birthday' provision?", opts: ["No provision", "Policy age determined by nearest birthday for rating", "Exact age only", "Always younger"], ans: 1, exp: "Age-nearest-birthday uses the insured's age as of the nearest birthday for premium calculation purposes." },
+                { q: "What is 'paid-up at 65' whole life?", opts: ["Cannot pay up", "Premiums paid until age 65, then paid-up", "Pay past 65", "Temporary"], ans: 1, exp: "Paid-up at 65 (or other age) requires premium payments until that age, then the policy is fully paid-up (no more premiums needed)." },
+                { q: "What is the 'cost of insurance' deduction in universal life?", opts: ["No deduction", "Monthly charge for the death benefit protection", "Premium cost", "Policy fee"], ans: 1, exp: "In UL policies, the cost of insurance (COI) is deducted monthly from cash value to cover the actual death benefit cost." },
+                { q: "What is the 'interest crediting rate' in universal life?", opts: ["Never credited", "Rate at which cash value interest is calculated and added", "Premium rate", "Fixed rate"], ans: 1, exp: "The interest crediting rate is the rate at which cash value earns interest, typically based on market indices and company factors." },
+                { q: "What is a 'policy anniversary'?", opts: ["Birthday", "Annual date policy was issued", "Premium due date", "Renewal date"], ans: 1, exp: "Policy anniversary is the annual date marking one year from policy issue, used for premium and benefit calculations." },
+                { q: "What is a 'policy year'?", opts: ["Calendar year", "12-month period from policy anniversary", "Fiscal year", "No year designation"], ans: 1, exp: "Policy year runs from policy anniversary to policy anniversary, used for tracking annual charges and benefits." },
+                { q: "What is 'premium mode'?", opts: ["Payment type", "Frequency of premium payments (monthly, annual, etc.)", "Amount only", "No frequency"], ans: 1, exp: "Premium mode refers to the frequency of premium payment (annual, semi-annual, quarterly, or monthly)." }
+            ],
+            annuities: [ // 11 questions
+                { q: "What defines an annuity?", opts: ["Life insurance policy", "Contract paying periodic income for a set period or lifetime", "Lump sum only", "Investment account"], ans: 1, exp: "An annuity is a contract where an insurance company pays income to the annuitant based on the contract terms." },
+                { q: "What is a 'fixed annuity'?", opts: ["Variable returns", "Guaranteed fixed payment amount", "Market-dependent", "No guarantee"], ans: 1, exp: "Fixed annuities guarantee a specific payment amount regardless of market conditions, providing stable income." },
+                { q: "What is a 'variable annuity'?", opts: ["Fixed payments", "Payments depend on performance of underlying investments", "Guaranteed amount", "Insurance only"], ans: 1, exp: "Variable annuities allow the annuitant to choose investment options, with payments varying based on investment performance." },
+                { q: "What is an 'immediate annuity'?", opts: ["Delayed payments", "Begins paying income shortly after purchase", "Deferred", "No immediate payment"], ans: 1, exp: "Immediate annuities begin making payments to the annuitant within a short period after purchase, often within 30 days." },
+                { q: "What is a 'deferred annuity'?", opts: ["Immediate", "Income payments begin at a future date after accumulation period", "Starts immediately", "Never pays"], ans: 1, exp: "Deferred annuities have an accumulation period where funds grow, then begin income payments at a later date." },
+                { q: "What is 'joint and survivor' annuity payout?", opts: ["Individual", "Income continues to surviving spouse after annuitant dies", "Ends at death", "No survivor"], ans: 1, exp: "Joint and survivor annuities continue paying income to the surviving spouse after the original annuitant passes away." },
+                { q: "What is an 'index annuity'?", opts: ["Fixed rate", "Returns tied to performance of specific market index", "Market-independent", "Fixed income"], ans: 1, exp: "Index (or equity-indexed) annuities offer returns based on performance of stock market indices like the S&P 500." },
+                { q: "What is a 'cap' in index annuities?", opts: ["No limit", "Maximum rate of return credited", "No maximum", "Unlimited"], ans: 1, exp: "Cap is the maximum interest rate the insurance company credits in index annuities, even if index performs better." },
+                { q: "What is a 'floor' in index annuities?", opts: ["No minimum", "Minimum interest rate guaranteed", "No guarantee", "Variable"], ans: 1, exp: "Floor is the guaranteed minimum interest rate credited, protecting the annuitant if the index performs poorly." },
+                { q: "What is 'participation rate' in index annuities?", opts: ["No participation", "Percentage of index gain credited to contract", "All gains", "No gains"], ans: 1, exp: "Participation rate is the percentage of the index's positive returns that are credited to the annuitant's contract." },
+                { q: "What is a 'surrender charge' on annuities?", opts: ["No charge", "Fee for withdrawing funds before end of surrender period", "Annual fee", "No penalty"], ans: 1, exp: "Surrender charges are fees imposed if annuitants withdraw more than allowed during the surrender period (typically 7-10 years)." }
+            ],
+            tax: [ // 8 questions
+                { q: "What is a contestable claim?", opts: ["A claim the beneficiary disputes", "A claim the insurer can challenge within the contestability period", "A claim over the policy limit", "A fraudulent claim"], ans: 1, exp: "A contestable claim is one the insurer can challenge within the contestability period (usually 2 years) based on material misstatements." },
+                { q: "What triggers a 'Modified Endowment Contract' (MEC) status?", opts: ["Policy anniversary", "Excessive premium payments relative to death benefit", "Age of insured", "Policyholder request"], ans: 1, exp: "A MEC results from paying premiums beyond the 7-pay test limit, affecting tax treatment of loans and withdrawals." },
+                { q: "What are tax consequences of MEC status?", opts: ["No consequences", "Loans and withdrawals taxed as income first", "Death benefit not taxable", "Premium deduction allowed"], ans: 1, exp: "In MEC status, loans and withdrawals are taxed as ordinary income (LIFO method) and may incur 10% penalty if before age 59½." },
+                { q: "What is the 'corridor' in variable life policies?", opts: ["Policy review", "Minimum required relationship between cash value and death benefit", "Coverage area", "Time period"], ans: 1, exp: "The corridor is the minimum required spread between death benefit and cash value to maintain policy tax status." },
+                { q: "What is an 'irrevocable life insurance trust' (ILIT)?", opts: ["Regular trust", "Trust that owns policy, with proceeds outside insured's estate", "Family trust", "Will provision"], ans: 1, exp: "An ILIT owns and is beneficiary of policies; proceeds pass to beneficiaries tax-free outside the insured's taxable estate." },
+                { q: "What is 'estate equalization'?", opts: ["Fair distribution", "Using life insurance to equalize inheritance between heirs", "Tax planning", "Wealth reduction"], ans: 1, exp: "Estate equalization uses insurance to ensure equal distribution when some heirs receive illiquid business assets." },
+                { q: "What is 'second-to-die' insurance?", opts: ["Coverage for spouse", "Insurance on two lives paying at second death", "Term insurance", "Joint policy"], ans: 1, exp: "Second-to-die (survivorship) insures two people and pays the death benefit when the second person dies." },
+                { q: "What is a 'long-term care rider'?", opts: ["Mobility assistance", "Provides living benefits if insured needs long-term care", "Travel coverage", "Medical only"], ans: 1, exp: "A long-term care rider allows access to the death benefit while living if the insured needs nursing care or assistance." }
+            ]
+        };
+
+        let examQuestions = [];
+        let currentIndex = 0;
+        let answers = [];
+        let submitted = false;
+        let showResults = false;
+        let timeLeft = 7200;
+        let examStarted = false;
+        let timerInterval = null;
+        let topicStats = {};
+
+        function generateNewExam() {
+            // Target distribution
+            const distribution = {
+                louisiana: 10,
+                licensing: 2,
+                general: 14,
+                basics: 16,
+                types: 17,
+                provisions: 26,
+                annuities: 11,
+                tax: 8
+            };
+
+            examQuestions = [];
+            topicStats = {};
+
+            // Select questions from each topic maintaining distribution
+            for (const [topic, count] of Object.entries(distribution)) {
+                const questions = questionBank[topic];
+                const shuffled = [...questions].sort(() => Math.random() - 0.5);
+                const selected = shuffled.slice(0, count);
+                examQuestions.push(...selected.map(q => ({ ...q, topic })));
+                topicStats[topic] = { correct: 0, total: count };
+            }
+
+            // Shuffle all questions
+            examQuestions = examQuestions.sort(() => Math.random() - 0.5);
+            currentIndex = 0;
+            answers = new Array(examQuestions.length).fill(null);
+            submitted = false;
+            showResults = false;
+            timeLeft = 7200;
+            examStarted = true;
+            startTimer();
+            render();
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    autoSubmit();
+                }
+                render();
+            }, 1000);
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function handleAnswer(idx) {
+            answers[currentIndex] = idx;
+            render();
+        }
+
+        function handleNext() {
+            if (currentIndex < examQuestions.length - 1) {
+                currentIndex++;
+                render();
+            }
+        }
+
+        function handlePrev() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                render();
+            }
+        }
+
+        function handleSubmit() {
+            if (answers.some(a => a === null)) return;
+            submitted = true;
+            showResults = true;
+            clearInterval(timerInterval);
+            render();
+        }
+
+        function autoSubmit() {
+            if (!showResults) {
+                submitted = true;
+                showResults = true;
+                render();
+            }
+        }
+
+        function calculateScore() {
+            let correct = 0;
+            for (let i = 0; i < examQuestions.length; i++) {
+                if (answers[i] === examQuestions[i].ans) correct++;
+            }
+            return correct;
+        }
+
+        function render() {
+            const app = document.getElementById('app');
+            
+            if (examQuestions.length === 0) {
+                app.innerHTML = '<p>Loading exam...</p>';
+                return;
+            }
+
+            if (showResults) {
+                const score = calculateScore();
+                const percentage = Math.round((score / 100) * 100);
+                const passing = percentage >= 70;
+                const timeUsed = 7200 - timeLeft;
+
+                app.innerHTML = `
+                    <div class="results">
+                        <h2>Exam Results</h2>
+                        <div class="score ${passing ? 'pass' : 'fail'}">${score}/100</div>
+                        <div style="font-size: 28px; font-weight: 600;">${percentage}%</div>
+                        <p>${passing ? '✓ Passing Score' : '✗ Below Passing'}</p>
+                        <p>${passing ? 'Excellent work! You are ready for the PSI exam.' : 'Review the topics and try again.'}</p>
+                        
+                        <div class="summary">
+                            <div class="summary-card">
+                                <div class="summary-card-label">Correct</div>
+                                <div class="summary-card-value" style="color: #4caf50;">${score}</div>
+                            </div>
+                            <div class="summary-card">
+                                <div class="summary-card-label">Incorrect</div>
+                                <div class="summary-card-value" style="color: #f44336;">${100 - score}</div>
+                            </div>
+                        </div>
+                        
+                        <p style="font-size: 13px; color: #999; margin: 1rem 0;">Time used: ${formatTime(timeUsed)}</p>
+                        
+                        <button class="btn btn-primary" onclick="location.reload()">Take New Exam</button>
+                    </div>
+                `;
+                return;
+            }
+
+            const q = examQuestions[currentIndex];
+            const timeWarning = timeLeft <= 300;
+
+            let html = `
+                <div class="header">
+                    <h1>PSI Life Insurance Exam</h1>
+                    <div class="timer ${timeWarning ? 'warning' : ''}">
+                        ${formatTime(timeLeft)}
+                    </div>
+                </div>
+                
+                <div class="meta">
+                    <span>Question ${currentIndex + 1}/100</span>
+                    <span>${q.topic.replace(/([A-Z])/g, ' $1').trim()}</span>
+                </div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${((currentIndex + 1) / 100) * 100}%"></div>
+                </div>
+                
+                <div class="question">
+                    <h3>${q.q}</h3>
+                    <div class="options">
+                        ${q.opts.map((opt, idx) => `
+                            <label class="option ${answers[currentIndex] === idx ? 'selected' : ''}">
+                                <input type="radio" name="answer" ${answers[currentIndex] === idx ? 'checked' : ''} 
+                                       onchange="handleAnswer(${idx})">
+                                <label>${opt}</label>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                ${submitted ? `
+                    <div class="feedback ${answers[currentIndex] === q.ans ? 'correct' : 'incorrect'}">
+                        <strong>${answers[currentIndex] === q.ans ? '✓ Correct' : '✗ Incorrect'}</strong>
+                        <p>${q.exp}</p>
+                        ${answers[currentIndex] !== q.ans ? `<p><strong>Correct answer:</strong> ${q.opts[q.ans]}</p>` : ''}
+                    </div>
+                ` : ''}
+                
+                <div class="buttons">
+                    <button class="btn" ${currentIndex === 0 ? 'disabled' : ''} onclick="handlePrev()">← Previous</button>
+                    <button class="btn" ${currentIndex === 99 ? 'disabled' : ''} onclick="handleNext()">Next →</button>
+                </div>
+                
+                <div class="buttons">
+                    <button class="btn" onclick="submitted = !submitted; render();">
+                        ${submitted ? 'Hide Feedback' : 'Show Feedback'}
+                    </button>
+                    <button class="btn btn-primary" ${answers.some(a => a === null) ? 'disabled' : ''} 
+                            onclick="handleSubmit()">Submit Exam</button>
+                </div>
+                
+                <div class="status">
+                    ${answers.filter(a => a !== null).length} of 100 answered
+                </div>
+            `;
+
+            app.innerHTML = html;
+        }
+
+        generateNewExam();
+    </script>
+</body>
+</html>
